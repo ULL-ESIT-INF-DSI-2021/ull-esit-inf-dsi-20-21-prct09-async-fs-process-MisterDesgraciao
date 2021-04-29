@@ -35,14 +35,14 @@ if (process.argv.length !== 3) {
 }
 ```
 
-##### Preguntas
+#### Preguntas
 El programa consiste en observar los cambios sobre un fichero concreto, para este caso usaremos **helloworld.txt**. Para ello, el programa usa varias funciones de **fs**:
 - **fs.access** es un función que comprueba los permisos que tiene el usuario, que en este caso intenta ejecutar el programa, respecto al fichero que aporta en la ejecución.
 - **fs.constants** es un almacén de varoles (flags) para **fs.access**. Es decir, fs.access debe recibir una de estas constantes, pues dependiento de ello comprueba el permiso en específico del usuario. Por ejemplo, en este caso usa 'F_OK' para comprobar si el usuario puede ver el fichero, es decir, si existe (y está disponible para él verlo). Otras flags que tiene son R_OK, W_OK, X_OK, que respectivamente comprueban permisos de Lectura, Escritura y Ejecución.
 - **fs.watch** es la función que nos permite poner bajo vigilancia un directorio/fichero. Es un objeto que heredad de **EventEmitter**, por lo cual a través del objeto **watcher** podemos recibir las actualizaciones sobre el fichero. 
 
-##### Ejecución del programa
-Para poder ejecutar el programa hay que realizar de la siguiente manera: `node ./dist/ejercicio-1.js helloworld.txt`. Esto de debe a que necesita recibir como argumento el *filename* del fichero a vigilar.
+#### Ejecución del programa
+Para poder ejecutar el programa hay que hacerlo de la siguiente manera: `node ./dist/ejercicio-1.js helloworld.txt`. Esto se debe a que necesita recibir como argumento el *filename* del fichero a vigilar.
 
 Si ejecutamos correctamente, nos mostrará lo siguiente por terminal: 
 `Starting to watch file helloworld.txt`
@@ -55,8 +55,10 @@ Y aunque esa condición se cumpla al mismo tiempo que se realiza la ejecución d
 Si realizamos algún cambio sobre el fichero **helloworld.txt**, entonces nos muestra el siguiente mensaje: `File helloworld.txt has been modified somehow`. Esto significa que el objeto *watcher* está recibiendo de la función *watch()* un argumento de tipo *change*, que nos dice que **algo** ha cambiado respecto al fichero. Un detalle en este punto es que la frase por consola se imprime 2 veces. No estoy seguro si es porque la función *watch()* devuelve los instancias de *change* o es algún otro motivo.
 
 Si volvemos a realizar otro cambio sobre el fichero, vuelve a imprimir: `File helloworld.txt has been modified somehow`.
+
 ---
-Para comprobar que todo esto es correcto, he realizado una modificación muy simplemente: añadir un `console.log()` después de la función `access`: 
+
+Para comprobar que todo esto es correcto, he realizado una modificación muy simplemente: añadir un `console.log()` después de la función `access` y realizar una ejecución normal del programa:
 ```typescript
 import {access, constants, watch} from 'fs';
 
@@ -85,7 +87,7 @@ if (process.argv.length !== 3) {
 
 Y, como aclaramos antes, el mensaje que acabo de añadir se imprime **antes** que todos los mensajes dentro de `access` a pesar de estar declarado después.
 
-[![P9-E1-terminal.png](https://i.postimg.cc/C5d1f96x/P9-E1-terminal.png)](https://postimg.cc/QKGs2Y32)
+[![P9-E1-terminal.png](https://i.postimg.cc/qBnbngyy/P9-E1-terminal.png)](https://postimg.cc/vDYtwYPZ)
 
 ## Ejercicio 2
 
