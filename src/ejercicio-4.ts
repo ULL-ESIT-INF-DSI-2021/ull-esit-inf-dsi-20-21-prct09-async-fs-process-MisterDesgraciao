@@ -40,14 +40,30 @@ yargs.command({
 
 yargs.command({
   command: 'mkdir',
-  describe: '',
+  describe: 'Dada un ruta, la crea como nuevo directorio.',
   builder: {
-    algo: {
-
+    ruta: {
+      describe: 'Ruta de directorio a crear.',
+      demandOption: true,
+      type: 'string',
     },
   },
   handler(argv) {
-
+    if (typeof argv.ruta === 'string') {
+      const route: string = argv.ruta;
+      fs.readdir(route, (err) => {
+        if (err) {
+          console.log(chalk.green('Creando la ruta.'));
+          fs.mkdir(route, () => {
+            console.log(chalk.green(`Ruta ${route} creada.`));
+          });
+        } else {
+          console.log(chalk.red.inverse('Error. La ruta ya existe como directorio.'));
+        }
+      });
+    } else {
+      console.log(chalk.red.inverse('La ruta especificada no es de formato string.'));
+    }
   },
 });
 
