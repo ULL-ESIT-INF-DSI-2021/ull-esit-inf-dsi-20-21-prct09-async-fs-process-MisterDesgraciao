@@ -184,6 +184,9 @@ Le damos un valor `true` a `comprobacion` para que después no nos salte el mens
             });
             contadorLineas.stdout.pipe(process.stdout);
           }
+          /**
+           * Resto de ifs...
+           *
 ```
 
 Por último, para imprimir este valor tenemos las dos variantes:
