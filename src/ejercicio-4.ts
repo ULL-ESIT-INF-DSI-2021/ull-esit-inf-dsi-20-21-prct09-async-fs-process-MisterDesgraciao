@@ -69,14 +69,31 @@ yargs.command({
 
 yargs.command({
   command: 'list',
-  describe: '',
+  describe: 'Mostrar los ficheros dentro de un directorio.',
   builder: {
-    algo: {
-
+    ruta: {
+      describe: 'Ruta a analizar.',
+      demandOption: true,
+      type: 'string',
     },
   },
   handler(argv) {
-
+    if (typeof argv.ruta === 'string') {
+      const route: string = argv.ruta;
+      fs.access(route, fs.constants.F_OK, (err) => {
+        if (err) console.log(chalk.red('Error. El directorio no existe'));
+        fs.readdir(route, 'utf8', (err, files) => {
+          if (err) {
+            console.log(chalk.red.inverse('Fallo inesperado en la lectura.'));
+          } else {
+            console.log(chalk.green(`Leemos del directorio '${route}'. Dentro hay los siguientes ficheros:`));
+            console.log(files);
+          }
+        });
+      });
+    } else {
+      console.log(chalk.red.inverse('La ruta especificada no es de formato string.'));
+    }
   },
 });
 
@@ -89,7 +106,11 @@ yargs.command({
     },
   },
   handler(argv) {
+    if (typeof argv.ruta === 'string') {
 
+    } else {
+      console.log(chalk.red.inverse('La ruta especificada no es de formato string.'));
+    }
   },
 });
 
@@ -102,7 +123,11 @@ yargs.command({
     },
   },
   handler(argv) {
+    if (typeof argv.ruta === 'string') {
 
+    } else {
+      console.log(chalk.red.inverse('La ruta especificada no es de formato string.'));
+    }
   },
 });
 
@@ -115,6 +140,10 @@ yargs.command({
     },
   },
   handler(argv) {
+    if (typeof argv.ruta === 'string') {
 
+    } else {
+      console.log(chalk.red.inverse('La ruta especificada no es de formato string.'));
+    }
   },
 }).parse();
