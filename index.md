@@ -344,3 +344,213 @@ Para este ejercicio tampoco he podido realizar tests por la propia naturaleza de
 
 ## Ejercicio 4
 
+Para este ejercicio se nos pide lo siguiente:
+> Desarrolle una aplicación que permita hacer de wrapper de los distintos comandos empleados en Linux para el manejo de ficheros y directorios. En concreto, la aplicación deberá permitir:
+>
+> - Dada una ruta concreta, mostrar si es un directorio o un fichero.
+> - Crear un nuevo directorio a partir de una nueva ruta que recibe como parámetro.
+> - Listar los ficheros dentro de un directorio.
+> - Mostrar el contenido de un fichero (similar a ejecutar el comando cat).
+> - Borrar ficheros y directorios.
+> - Mover y copiar ficheros y/o directorios de una ruta a otra. Para este caso, la aplicación recibirá una ruta origen y una ruta destino. En caso de que la ruta origen represente un directorio, se debe copiar dicho directorio y todo su contenido a la ruta destino.
+>
+> Para interactuar con la aplicación a través de la línea de comandos, puede hacer uso de yargs.
+
+Mi interpretación es crear un comando usando `yargs` para cada una de estas tareas que tienen su comando específico en una terminal. El planteamiento de todo es muy sencillo: intentar recrear de la manera más fiel posible, el comportamiento de cada comando.
+
+El primer comando es muy sencillo: comprobar si una ruta dada corresponde a un directorio o un fichero. Solo necesitamos la ruta a analizar. Para comprobar esto, primero hay que saber si esa ruta existe con `fs.access()`, en caso que sí, para diferenciar si es un fichero o un directorio es usar las funciones `fs.readFile` y `fs.readdir`, respectivamente. La que **no falle** corresponde al tipo, es decir, si falla la lectura del directorio, es porque es un fichero y viceversa.
+
+```typescript
+yargs.command({
+  command: 'ruta',
+  describe: 'Dada un ruta, dice si es un directorio o un fichero.',
+  builder: {
+    ruta: {
+      describe: 'Ruta a analizar.',
+      demandOption: true,
+      type: 'string',
+    },
+  },
+  handler(argv) {
+    if (typeof argv.ruta === 'string') {
+      const path: string = argv.ruta;
+      fs.access(path, fs.constants.F_OK, (err) => {
+        if (err) {
+          console.log(chalk.red.inverse(`La ruta ${argv.ruta} no existe.`));
+        } else {
+          fs.readdir(path, (err) => {
+            if (!err) {
+              console.log(chalk.green('Es un directorio.'));
+            }
+          });
+          fs.readFile(path, (err) => {
+            if (!err) {
+              console.log(chalk.green('Es un documento.'));
+            }
+          });
+        }
+      });
+    } else {
+      console.log(chalk.red.inverse('Formato de la ruta no válido. Debe ser un string'));
+    }
+  },
+});
+```
+
+El siguiente comando es **mkdir**, con el que creamos un directorio si la ruta no existe. Si lo primero que hay que hacer es comprobar que esa ruta **no exista**. Así que llamamos a `fs.access` esperando a que salte `err`. Es entonces que usamos `fs.mkdir` sobre la ruta otorgada para crear el directorio.
+
+```typescript
+yargs.command({
+  command: 'mkdir',
+  describe: 'Dada un ruta, la crea como nuevo directorio.',
+  builder: {
+    ruta: {
+      describe: 'Ruta de directorio a crear.',
+      demandOption: true,
+      type: 'string',
+    },
+  },
+  handler(argv) {
+    if (typeof argv.ruta === 'string') {
+      const path: string = argv.ruta;
+      fs.readdir(path, (err) => {
+        if (err) {
+          console.log(chalk.green('Creando la ruta.'));
+          fs.mkdir(path, () => {
+            console.log(chalk.green(`Ruta ${path} creada.`));
+          });
+        } else {
+          console.log(chalk.red.inverse('Error. La ruta ya existe como directorio.'));
+        }
+      });
+    } else {
+      console.log(chalk.red.inverse('La ruta especificada no es de formato string.'));
+    }
+  },
+});
+```
+
+Para el comando de "listar los ficheros de un directorio", al cual he llamado *list*, primero necesitamos comprobar que el directorio existe y después leer su contenido. Para lo primero lo comprobamos con `fs.access` y para lo segundo llamamos a `fs.readdir` para obtener el contenido que imprimimos por pantalla.
+
+```typescript
+yargs.command({
+  command: 'list',
+  describe: 'Mostrar los ficheros dentro de un directorio.',
+  builder: {
+    ruta: {
+      describe: 'Ruta a analizar.',
+      demandOption: true,
+      type: 'string',
+    },
+  },
+  handler(argv) {
+    if (typeof argv.ruta === 'string') {
+      const path: string = argv.ruta;
+      fs.access(path, fs.constants.F_OK, (err) => {
+        if (err) {
+          console.log(chalk.red('Error. El directorio no existe'));
+        } else {
+          fs.readdir(path, 'utf8', (err, files) => {
+            if (err) {
+              console.log(chalk.red.inverse('Fallo inesperado en la lectura.'));
+            } else {
+              console.log(chalk.green(`Leemos del directorio '${path}'. Dentro hay los siguientes ficheros:`));
+              console.log(files);
+            }
+          });
+        }
+      });
+    } else {
+      console.log(chalk.red.inverse('La ruta especificada no es de formato string.'));
+    }
+  },
+});
+```
+
+Para "Mostrar el contenido de un fichero (similar a ejecutar `cat`)" lo he llamado `cat` directamente, y el planteamiento es igual que el comando anterior: comprobar que el fichero existe y leer su contenido. Para lo primero usamos, como siempre, `fs.access` y para lo segundo usamos `fs.readFile`, imprimiendo el contenido por pantalla.
+
+```typescript
+yargs.command({
+  command: 'cat',
+  describe: 'Mostrar el contenido de un fichero.',
+  builder: {
+    ruta: {
+      describe: 'Fichero a leer.',
+      demandOption: true,
+      type: 'string',
+    },
+  },
+  handler(argv) {
+    if (typeof argv.ruta === 'string') {
+      const path: string = argv.ruta;
+      fs.access(path, (err) => {
+        if (err) {
+          console.log(chalk.red('Error. El fichero no existe'));
+        } else {
+          fs.readFile(path, 'utf8', (err, data) => {
+            if (err) {
+              console.log(chalk.red('Error. Esta dirección no corresponde a un documento.'));
+            } else {
+              console.log(chalk.green(`El contenido de ${path} es:`));
+              console.log(data);
+            }
+          });
+        }
+      });
+    } else {
+      console.log(chalk.red.inverse('La ruta especificada no es de formato string.'));
+    }
+  },
+});
+```
+
+El penúltimo comando es el borrado **rm** (remove). El ejercicio especifica que debe borrar tanto ficheros como directorios, así que mi planteamiento es el siguiente: primero comprobar que existe (con `fs.access`), después comprobar si es un fichero o un directorio, pues no se borran con el mismo comando. Este segundo paso lo consigo usando `fs.readdir` y `fs.readFile`. El que no devuelva un error de los 2, significa que es de ese tipo, así dependiendo de ello, llamamos dentro de esas funciones a `fs.rmdir` o `fs.rm`, respectivamente. 
+
+De esta manera me aseguro de borrar correctamente cada uno de los 2 tipos de archivos.
+
+```typescript
+yargs.command({
+  command: 'rm',
+  describe: 'Elimina ficheros y directorios',
+  builder: {
+    ruta: {
+      describe: 'Ruta a eliminar',
+      demandOption: true,
+      type: 'string',
+    },
+  },
+  handler(argv) {
+    if (typeof argv.ruta === 'string') {
+      const path: string = argv.ruta;
+      fs.access(path, (err) => {
+        if (err) {
+          console.log(chalk.red('Error. El fichero/directorio no existe'));
+        } else {
+          fs.readdir(path, (err) => {
+            if (!err) {
+              console.log(chalk.green(`Eliminamos el directorio: ${path}`));
+              fs.rmdir(path, (err) => {
+                if (err) console.log(chalk.red.inverse(`Error al intentar borrar el directorio ${path}`));
+              });
+            }
+          });
+          fs.readFile(path, (err) => {
+            if (!err) {
+              console.log(chalk.green(`Eliminamos el fichero: ${path}`));
+              fs.rm(path, (err) => {
+                if (err) console.log(chalk.red.inverse(`Error al intentar borrar el fichero ${path}`));
+              });
+            }
+          });
+        }
+      });
+    } else {
+      console.log(chalk.red.inverse('La ruta especificada no es de formato string.'));
+    }
+  },
+});
+```
+
+```typescript
+
+```
