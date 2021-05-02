@@ -133,6 +133,9 @@ Este comando lo he llamado **'contador'**, y debe recibir como argumento el nomb
 Así pues, cuando se ejecuta el `handler`, lo primero que se hace es comprobar que los tipos son correctos: el nombre del fichero es tipo `string` y el de las opciones son `boolean`. Lo siguiente que hace es comprobar con `fs.access` si el fichero en cuestión existe/tiene permisos el usuario para **leerlo** (constante *R_OK*). Si devuelve un error, lo comunicamos, si no, continuamos con la ejecución.
 
 ```typescript
+/**
+ * código anterior.
+ */
 handler(argv) {
     if (typeof argv.fichero === 'string' &&
          (typeof argv.lineas === 'boolean' ||
