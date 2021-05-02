@@ -202,6 +202,140 @@ Por último, comentar que para este programa no he realizado tests porque no pue
 
 ## Ejercicio 3
 
+Para este ejercicio nos piden crear un programa en paralelo al ejercicio de la Práctica 8. Ese ejercicio consistía en crear un programa que permita crear, modificar y eliminar Notas dentro de ficheros de distintos usuarios. En este ejercicio nos centramos en observar, a través de la función `fs.watch()`, si la carpeta seleccionada recibe algún cambio en los ficheros que contiene.
+
+Para conseguir este objetivo, hago uso de la función `yargs`, para crear un nuevo comando llamado **observar**. Este nuevo comando debe recibir tanto la **ruta** como el **nombre** de la carpeta a observar. Por ejemplo: --usuario="oscar" --ruta="./users"
+
+```typescript
+yargs.command({
+  command: 'observar',
+  describe: 'Observa un directorio.',
+  builder: {
+    usuario: {
+      describe: 'Nombre de usuario',
+      demandOption: true,
+      type: 'string',
+    },
+    ruta: {
+      describe: 'Dirección de la carpeta',
+      demandOption: true,
+      type: 'string',
+    },
+  },
+  /**
+   * Continúa en el handler...
+   */
+```
+
+Lo primero que hace es comprobar el formato correcto de los dos argumentos. En caso de que alguno no sea de tipo *string*, comunica el error por terminal y no ejecuta nada.
+
+En caso afirmativo, crea la variable `fileroute`, que no es más que la unión de la `argv.ruta` + `/` + `argv.usuario`, de esta manera obtenemos la ruta absoluta de la carpeta de usuario. Con este nuevo valor, lo primero que hacemos es comprobar si existe usando `fs.access()`. Si no existe, lo comunicamos, y si existe continuamos con el código.
+
+```typescript
+handler(argv) {
+    if (typeof argv.usuario === 'string' &&
+        typeof argv.ruta === 'string') {
+      const fileroute: string = argv.ruta + '/' + argv.usuario;
+      fs.access(fileroute, fs.constants.R_OK, (err) => {
+        if (err) {
+          console.log(chalk.red.inverse(`El fichero ${fileroute} no existe.`));
+        } else {
+          /**
+           * Resto del código...
+           */
+        }
+      });
+    } else {
+      console.log(chalk.red.inverse(
+          'El valor de algún argumento no es de tipo string'));
+    }
+  },
+}).parse();
+```
+
+Comunicamos la dirección que estamos observando para que el usuario lo sepa.
+
+Usamos `fs.watch()` para crear el objeto `Watcher` que nos dará la información sobre lo que ocurre dentro de la carpeta. Para conseguir esto, en el *callback* declaramos dos variables: `eventType` y `filename`, que nos indican qué tipo de evento ha ocurrido dentro de la carpeta y sobre qué fichero, respectivamente.
+
+Es importante crear la variable `rutaFichero` con el contenido de `fileroute` + `/` + `filename`, pues es la ruta absoluta del **fichero** que ha sufrido algún cambio, y la necesitamos después para algunas funciones.
+
+Principalmente, nos basamos en los dos valores que puede obtener `eventType` para distinguir los eventos que ocurren. Si el valor es *rename*, entonces es que ha aparecido o desaparecido un fichero del directorio. Esto lo podemos saber por la documentación de la propia función:
+> On most platforms, 'rename' is emitted whenever a filename appears or disappears in the directory.
+
+Así pues, para distinguir si el fichero ha sido creado o ha sido borrado, lo único que hay que hacer es comprobar la ruta absoluta `rutaFichero` con `fs.access()`. En caso de que tratar de acceder al fichero de un error, significa que ha sido borrado, pero si se puede acceder a él, es que ha sido creado. Por último, llamamos también a `fs.readFile()` para imprimir por pantalla el contenido de este nuevo fichero.
+
+```typescript
+          /**
+           * código anterior.
+           */
+          console.log(chalk.green.inverse(`Observamos en: ${fileroute}`));
+          const vigilancia = fs.watch(fileroute, (eventType, filename) => {
+            const rutaFichero = fileroute + '/' + filename;
+            if (eventType === 'rename') {
+              fs.access(rutaFichero, fs.constants.F_OK, (err) => {
+                if (err) {
+                  console.log(chalk.green(
+                      `Se ha borrado el fichero '${filename}' en ${fileroute}`));
+                } else {
+                  console.log(chalk.green(
+                      `Se ha creado el fichero '${filename}' en ${fileroute}.`));
+                  fs.readFile(rutaFichero, 'utf8', (err, data) => {
+                    if (err) console.log(chalk.red.inverse('Falló la lectura del fichero'));
+                    console.log(chalk.green('El contendio del fichero es: '));
+                    console.log(data);
+                  });
+                }
+              });
+              /**
+               * código posterior...
+               */
+```
+
+En caso de `eventType` obtenga el valor *change*, entonces significa que se ha producido algún cambio sobre algún fichero. Primero lo comunicamos por terminal, y posteriormente llamamos a `fs.readFile()` para leer el nuevo contenido del mismo.
+
+```typescript
+            /**
+             * código anterior.
+             */
+            } else if (eventType === 'change') {
+              console.log(chalk.green(
+                  `Se ha modificado el fichero: ${rutaFichero}`));
+              fs.readFile(rutaFichero, 'utf8', (err, data) => {
+                if (err) {
+                  console.log(chalk.red.inverse(
+                      'Falló la lectura del fichero'));
+                }
+                console.log(`Fichero: ${rutaFichero}`);
+                console.log(chalk.green(`El contenido del fichero es:`));
+                console.log(data);
+              });
+            }
+          });
+
+          vigilancia.on('close', () => {
+            console.log('Fichero cerrado');
+          });
+          /**
+           * código posterior...
+           */
+```
+
+Una ejecución de ejemplo de este programa siguiendo estas acciones: [Modifico el fichero] > [Borro hola.txt] > [Creo el fichero hola.txt fuera de la carpeta y la muevo dentro]
+
+[![Ejecucion-Ejemplo-Ejercicio-3.png](https://i.postimg.cc/FFT2DT2t/Ejecucion-Ejemplo-Ejercicio-3.png)](https://postimg.cc/PN83qQXK)
+
+Por último sobre este ejercicio, queda contestar a las preguntas realizadas en el guión:
+> ¿Qué evento emite el objeto Watcher cuando se crea un nuevo fichero en el directorio observado? ¿Y cuando se elimina un fichero existente? ¿Y cuando se modifica?
+Un objeto `Watcher` emite un evento *rename* cuando un elemento aparece o desaparece de un directorio. Cuando se modifica, entonces `Watcher` emite un evento *change*.
+
+> ¿Cómo haría para mostrar, no solo el nombre, sino también el contenido del fichero, en el caso de que haya sido creado o modificado?
+Esta cuestión la he realizado. Lo primero que hay que hacer es asegurarse que el fichero existe con `fs.access()`. Entonces podemos leer el contenido del mismo con `fs.readFile()` e imprimirlo por pantalla. 
+
+> ¿Cómo haría para que no solo se observase el directorio de un único usuario sino todos los directorios correspondientes a los diferentes usuarios de la aplicación de notas?
+Esta cuestión no la he realizado por falta de tiempo. Para poder realizarla lo primero es comprobar que el fichero a observar existe. Después, lo que hay que hacer es leer el contenido del directorio con `fs.readdir()` y almacenar esos valores en una variable que llamaremos `contenido`. Si accedemos a `contenido` usando un bucle `forEach()`, entonces obtenemos el nombre de cada carpeta de usuario, es decir, el valor de `argv.usuario`. Sería en este punto que creamos un objeto `Watcher` por cada carpeta de usuario y así podríamos estar al tanto de todos los cambios de todas las carpetas.
+
+---
+Para este ejercicio tampoco he podido realizar tests por la propia naturaleza de `mocha` y su incompatibilidad de comprobar cosas de `yargs`.
 
 ## Ejercicio 4
 
