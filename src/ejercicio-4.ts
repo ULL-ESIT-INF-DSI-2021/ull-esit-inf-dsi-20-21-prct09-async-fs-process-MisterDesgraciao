@@ -15,17 +15,17 @@ yargs.command({
   },
   handler(argv) {
     if (typeof argv.ruta === 'string') {
-      const rutaAnalizar: string = argv.ruta;
-      fs.access(rutaAnalizar, fs.constants.F_OK, (err) => {
+      const path: string = argv.ruta;
+      fs.access(path, fs.constants.F_OK, (err) => {
         if (err) {
           console.log(chalk.red.inverse(`La ruta ${argv.ruta} no existe.`));
         } else {
-          fs.readdir(rutaAnalizar, (err) => {
+          fs.readdir(path, (err) => {
             if (!err) {
               console.log(chalk.green('Es un directorio.'));
             }
           });
-          fs.readFile(rutaAnalizar, (err) => {
+          fs.readFile(path, (err) => {
             if (!err) {
               console.log(chalk.green('Es un documento.'));
             }
@@ -50,12 +50,12 @@ yargs.command({
   },
   handler(argv) {
     if (typeof argv.ruta === 'string') {
-      const route: string = argv.ruta;
-      fs.readdir(route, (err) => {
+      const path: string = argv.ruta;
+      fs.readdir(path, (err) => {
         if (err) {
           console.log(chalk.green('Creando la ruta.'));
-          fs.mkdir(route, () => {
-            console.log(chalk.green(`Ruta ${route} creada.`));
+          fs.mkdir(path, () => {
+            console.log(chalk.green(`Ruta ${path} creada.`));
           });
         } else {
           console.log(chalk.red.inverse('Error. La ruta ya existe como directorio.'));
@@ -79,17 +79,20 @@ yargs.command({
   },
   handler(argv) {
     if (typeof argv.ruta === 'string') {
-      const route: string = argv.ruta;
-      fs.access(route, fs.constants.F_OK, (err) => {
-        if (err) console.log(chalk.red('Error. El directorio no existe'));
-        fs.readdir(route, 'utf8', (err, files) => {
-          if (err) {
-            console.log(chalk.red.inverse('Fallo inesperado en la lectura.'));
-          } else {
-            console.log(chalk.green(`Leemos del directorio '${route}'. Dentro hay los siguientes ficheros:`));
-            console.log(files);
-          }
-        });
+      const path: string = argv.ruta;
+      fs.access(path, fs.constants.F_OK, (err) => {
+        if (err) {
+          console.log(chalk.red('Error. El directorio no existe'));
+        } else {
+          fs.readdir(path, 'utf8', (err, files) => {
+            if (err) {
+              console.log(chalk.red.inverse('Fallo inesperado en la lectura.'));
+            } else {
+              console.log(chalk.green(`Leemos del directorio '${path}'. Dentro hay los siguientes ficheros:`));
+              console.log(files);
+            }
+          });
+        }
       });
     } else {
       console.log(chalk.red.inverse('La ruta especificada no es de formato string.'));
@@ -99,15 +102,31 @@ yargs.command({
 
 yargs.command({
   command: 'cat',
-  describe: '',
+  describe: 'Mostrar el contenido de un fichero.',
   builder: {
-    algo: {
-
+    ruta: {
+      describe: 'Fichero a leer.',
+      demandOption: true,
+      type: 'string',
     },
   },
   handler(argv) {
     if (typeof argv.ruta === 'string') {
-
+      const path: string = argv.ruta;
+      fs.access(path, (err) => {
+        if (err) {
+          console.log(chalk.red('Error. El fichero no existe'));
+        } else {
+          fs.readFile(path, 'utf8', (err, data) => {
+            if (err) {
+              console.log(chalk.red('Error. Esta dirección no corresponde a un documento.'));
+            } else {
+              console.log(chalk.green(`El contenido de ${path} es:`));
+              console.log(data);
+            }
+          });
+        }
+      });
     } else {
       console.log(chalk.red.inverse('La ruta especificada no es de formato string.'));
     }
@@ -116,15 +135,39 @@ yargs.command({
 
 yargs.command({
   command: 'rm',
-  describe: '',
+  describe: 'Elimina ficheros y directorios',
   builder: {
-    algo: {
-
+    ruta: {
+      describe: 'Ruta a eliminar',
+      demandOption: true,
+      type: 'string',
     },
   },
   handler(argv) {
     if (typeof argv.ruta === 'string') {
-
+      const path: string = argv.ruta;
+      fs.access(path, (err) => {
+        if (err) {
+          console.log(chalk.red('Error. El fichero/directorio no existe'));
+        } else {
+          fs.readdir(path, (err) => {
+            if (!err) {
+              console.log(chalk.green(`Eliminamos el directorio: ${path}`));
+              fs.rmdir(path, (err) => {
+                if (err) console.log(chalk.red.inverse(`Error al intentar borrar el directorio ${path}`));
+              });
+            }
+          });
+          fs.readFile(path, (err) => {
+            if (!err) {
+              console.log(chalk.green(`Eliminamos el fichero: ${path}`));
+              fs.rm(path, (err) => {
+                if (err) console.log(chalk.red.inverse(`Error al intentar borrar el fichero ${path}`));
+              });
+            }
+          });
+        }
+      });
     } else {
       console.log(chalk.red.inverse('La ruta especificada no es de formato string.'));
     }
