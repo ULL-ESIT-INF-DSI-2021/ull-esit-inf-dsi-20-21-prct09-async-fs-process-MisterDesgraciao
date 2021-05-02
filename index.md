@@ -89,8 +89,109 @@ Y, como aclaramos antes, el mensaje que acabo de añadir se imprime **antes** qu
 
 [![P9-E1-terminal.png](https://i.postimg.cc/qBnbngyy/P9-E1-terminal.png)](https://postimg.cc/vDYtwYPZ)
 
+Para este ejercicio no he realizado ningún tests por dos motivos: primero porque no puedo realizar tests con `mocha` si no es sobre variables o estructuras de datos, y segundo porque es un ejercicio que consiste en analizar el funcionamiento del programa y contestar las preguntas planteadas.
+
 ## Ejercicio 2
 
+Este ejercicio consiste en crear un pequeño programa al que se le otorga un nombre de un fichero, y si existe, imprimir el número de líneas, palabras y/o caracteres del mismo. 
+
+Para lograr esto, he creado un nuevo comando usando el módulo `yargs`:
+
+```typescript
+yargs.command({
+  command: 'contador',
+  describe: 'Cuenta el número de varias cosas',
+  builder: {
+    fichero: {
+      describe: 'Fichero a leer',
+      demandOption: true,
+      type: 'string',
+    },
+    lineas: {
+      describe: 'Lee el número de líneas',
+      demandOption: false,
+      type: 'boolean',
+    },
+    palabras: {
+      describe: 'Lee el número de palabras',
+      demandOption: false,
+      type: 'boolean',
+    },
+    caracteres: {
+      describe: 'Lee el número de caracteres',
+      demandOption: false,
+      type: 'boolean',
+    },
+  },
+  /**
+   * continúa en el handler...
+   */
+```
+
+Este comando lo he llamado **'contador'**, y debe recibir como argumento el nombre del fichero y , como mínimo, uno de las 3 siguientes opciones: `lineas`, `palabras` y/o `caracteres`. Si el nombre del fichero recibido no lo encuentra (no existe o no puede leerlo), comunica el error. Así mismo, si no se le especifica ninguna de las 3 opciones también lo comenta por terminal.
+
+Así pues, cuando se ejecuta el `handler`, lo primero que se hace es comprobar que los tipos son correctos: el nombre del fichero es tipo `string` y el de las opciones son `boolean`. Lo siguiente que hace es comprobar con `fs.access` si el fichero en cuestión existe/tiene permisos el usuario para **leerlo** (constante *R_OK*). Si devuelve un error, lo comunicamos, si no, continuamos con la ejecución.
+
+```typescript
+handler(argv) {
+    if (typeof argv.fichero === 'string' &&
+         (typeof argv.lineas === 'boolean' ||
+         typeof argv.palabras === 'boolean' ||
+         typeof argv.caracteres === 'boolean')) {
+      const filename: string = argv.fichero;
+      fs.access(filename, fs.constants.R_OK, (err) => {
+        if (err) {
+          console.log(chalk.red.inverse(`El fichero ${filename} no existe.`));
+        } else {
+          console.log(chalk.green.inverse(`Contamos del fichero ${filename}.`));
+          let comprobacion: boolean = false;
+          /**
+           * If de cada opción...
+           */
+```
+
+Para comentar el código de los `if` me basta con hacerlo con uno solo, pues las 3 versiones usan el mismo comando `wc` (*Word Counter*) pero con opciones diferentes: **-l** para líneas, **-w** para palabras y **-m** para caracteres. Es decir, las 3 funciones juntas se verían así:
+
+```typescript
+const contadorLineas = spawn('wc', ['-l', filename]);
+const contadorPalabras = spawn('wc', ['-w', filename]);
+const contadorCaracteres = spawn('wc', ['-m', filename]);
+```
+
+Con esto aclarado, vamos al código. Lo primero que hay que hacer es comprobar si la opción está seleccionada desde la ejecución del comando. Si es `true`, entonces lo primero que hacemos el usar `spawn` para almacenar en `contadorLineas` un `ChildProcess`, que en este caso cuenta las líneas del fichero.
+
+Posteriormente, lo que ocurre es que a través de `contadorLineas.stdout.on()` le podemos especificar qué hacer cuando el objeto lee. En el caso de que reciba un argumento de tipo `data`, lo que hace es coger ese valor almacenado en `chunk`, y lo suma al contador llamado `outputLineas`.
+
+Le damos un valor `true` a `comprobacion` para que después no nos salte el mensaje de error de que no se ha otorgado ninguna opción en la ejecución.
+
+```typescript
+          /**
+           * código anterior.
+           */
+          if (argv.lineas === true) {
+            const contadorLineas = spawn('wc', ['-l', filename]);
+            let outputLineas: number = 0;
+            contadorLineas.stdout.on('data', (chunk) => {
+              outputLineas += chunk;
+            });
+            comprobacion = true;
+            contadorLineas.stdout.on('close', () => {
+              console.log(
+                  `El total de líneas es ${outputLineas}.`);
+            });
+            contadorLineas.stdout.pipe(process.stdout);
+          }
+```
+
+Por último, para imprimir este valor tenemos las dos variantes:
+- La variante sin `pipe` que realizar un `console.log()` cuando la variable recibe un argumento de tipo `close`, es decir, que el programa finaliza correctamente (termina el comando `wc`). 
+- Usando `contadorLineas.stdout.pipe(process.stdout)` lo que hacemos es enviar el valor de `contadorLineas` usando un `pipe` (debido a que es un objeto `ChildProcess`, es decir, hereda de `Stream`) a la salida por terminal, simbolizada por la variable `process.stdout`.
+
+Un par de apuntes que tengo que hacer sobre estas dos salidas. La primera es que no entiendo muy bien cómo funciona el output a través de `console.log()`, quiero decir, a pesar de declararlo como `number`, esta variable tiene el número recibido más el nombre del fichero. En un principio pensé que esto funcionada más como un vector, pero se parece más a un string, y si accedeo al valor de la posición 1, accedo solo al primer dígito, y no al número completo.
+
+Esto podría suponer un problema: el imprimir [x] por [x] supone que para cantidades muy grandes de texto es posible que falten dígitos por imprimir. Así que al final me he decantado por imprimir el valor completo de la variable, pues aunque tiene un formato feo (el que recibe del buffer pero en string), siempre es correcto.
+
+Por último, comentar que para este programa no he realizado tests porque no puedo realizar comprobaciones con `mocha` sobre un comando creado con `yargs`. Este ejercicio lo único que hace es recoger información e implimirla por pantalla, lo cual no sé si puede comprobar siquiera.
 
 ## Ejercicio 3
 

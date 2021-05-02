@@ -52,7 +52,7 @@ yargs.command({
             contadorLineas.stdout.on('close', () => {
               console.log(
                   // eslint-disable-next-line max-len
-                  `El total de líneas es ${outputLineas[1]}${outputLineas[2]}.`);
+                  `El total de líneas es ${outputLineas}.`);
             });
             // console.log('Las líneas impresas usando pipe() son:');
             contadorLineas.stdout.pipe(process.stdout);
@@ -67,7 +67,7 @@ yargs.command({
             contadorPalabras.stdout.on('close', () => {
               console.log(
                   // eslint-disable-next-line max-len
-                  `El total de palabras es ${outputPalabras[1]}${outputPalabras[2]}.`);
+                  `El total de palabras es ${outputPalabras}.`);
             });
             // console.log('Las palabras impresas usando pipe() son:');
             contadorPalabras.stdout.pipe(process.stdout);
@@ -82,7 +82,7 @@ yargs.command({
             contadorCaracteres.stdout.on('close', () => {
               console.log(
                   // eslint-disable-next-line max-len
-                  `El total de caracteres es ${outputCaracteres[1]}${outputCaracteres[2]}.`);
+                  `El total de caracteres es ${outputCaracteres}.`);
             });
             // console.log('Los caracteres impresos usando pipe() son:');
             contadorCaracteres.stdout.pipe(process.stdout);
