@@ -324,14 +324,19 @@ Una ejecución de ejemplo de este programa siguiendo estas acciones: [Modifico e
 
 [![Ejecucion-Ejemplo-Ejercicio-3.png](https://i.postimg.cc/FFT2DT2t/Ejecucion-Ejemplo-Ejercicio-3.png)](https://postimg.cc/PN83qQXK)
 
+En esta captura se pueden observar lo que ya había comentado antes: algunos comandos se repiten. En concreto para este caso únicamente ocurre cuando pasa un `change` en el `eventType` de `fs.watch()`. También resaltar que al crear directamente el fichero en el directorio, solo salta el `eventType` de `rename`. Sin embargo, en este ejemplo me equivoqué: lo creé fuera y después lo moví dentro. Lo que ocurrió fue que detectó un nuevo fichero, así que obtuvo un evento `rename`, pero también lo detectó como `change` y actuó al respecto.
+
 Por último sobre este ejercicio, queda contestar a las preguntas realizadas en el guión:
 > ¿Qué evento emite el objeto Watcher cuando se crea un nuevo fichero en el directorio observado? ¿Y cuando se elimina un fichero existente? ¿Y cuando se modifica?
+
 Un objeto `Watcher` emite un evento *rename* cuando un elemento aparece o desaparece de un directorio. Cuando se modifica, entonces `Watcher` emite un evento *change*.
 
 > ¿Cómo haría para mostrar, no solo el nombre, sino también el contenido del fichero, en el caso de que haya sido creado o modificado?
+
 Esta cuestión la he realizado. Lo primero que hay que hacer es asegurarse que el fichero existe con `fs.access()`. Entonces podemos leer el contenido del mismo con `fs.readFile()` e imprimirlo por pantalla. 
 
 > ¿Cómo haría para que no solo se observase el directorio de un único usuario sino todos los directorios correspondientes a los diferentes usuarios de la aplicación de notas?
+
 Esta cuestión no la he realizado por falta de tiempo. Para poder realizarla lo primero es comprobar que el fichero a observar existe. Después, lo que hay que hacer es leer el contenido del directorio con `fs.readdir()` y almacenar esos valores en una variable que llamaremos `contenido`. Si accedemos a `contenido` usando un bucle `forEach()`, entonces obtenemos el nombre de cada carpeta de usuario, es decir, el valor de `argv.usuario`. Sería en este punto que creamos un objeto `Watcher` por cada carpeta de usuario y así podríamos estar al tanto de todos los cambios de todas las carpetas.
 
 ---
