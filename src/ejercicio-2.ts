@@ -45,14 +45,15 @@ yargs.command({
           let comprobacion: boolean = false;
           if (argv.lineas === true) {
             const contadorLineas = spawn('wc', ['-l', filename]);
-            let outputLineas: number = 0;
+            let outputLineas = ' ';
             contadorLineas.stdout.on('data', (chunk) => {
               outputLineas += chunk;
             });
             contadorLineas.stdout.on('close', () => {
+              const outputLineasArray = outputLineas.split(/\s+/);
               console.log(
                   // eslint-disable-next-line max-len
-                  `El total de líneas es ${outputLineas}.`);
+                  `El total de líneas es ${outputLineasArray[1]}.`);
             });
             // console.log('Las líneas impresas usando pipe() son:');
             contadorLineas.stdout.pipe(process.stdout);
@@ -60,14 +61,15 @@ yargs.command({
           }
           if (argv.palabras === true) {
             const contadorPalabras = spawn('wc', ['-w', filename]);
-            let outputPalabras: number = 0;
+            let outputPalabras = ' ';
             contadorPalabras.stdout.on('data', (chunk) => {
               outputPalabras += chunk;
             });
             contadorPalabras.stdout.on('close', () => {
+              const outputPalabrasArray = outputPalabras.split(/\s+/);
               console.log(
                   // eslint-disable-next-line max-len
-                  `El total de palabras es ${outputPalabras}.`);
+                  `El total de palabras es ${outputPalabrasArray[1]}.`);
             });
             // console.log('Las palabras impresas usando pipe() son:');
             contadorPalabras.stdout.pipe(process.stdout);
@@ -75,14 +77,15 @@ yargs.command({
           }
           if (argv.caracteres === true) {
             const contadorCaracteres = spawn('wc', ['-m', filename]);
-            let outputCaracteres: number = 0;
+            let outputCaracteres = ' ';
             contadorCaracteres.stdout.on('data', (chunk) => {
               outputCaracteres += chunk;
             });
             contadorCaracteres.stdout.on('close', () => {
+              const outputCaracteresArray = outputCaracteres.split(/\s+/);
               console.log(
                   // eslint-disable-next-line max-len
-                  `El total de caracteres es ${outputCaracteres}.`);
+                  `El total de caracteres es ${outputCaracteresArray[1]}.`);
             });
             // console.log('Los caracteres impresos usando pipe() son:');
             contadorCaracteres.stdout.pipe(process.stdout);

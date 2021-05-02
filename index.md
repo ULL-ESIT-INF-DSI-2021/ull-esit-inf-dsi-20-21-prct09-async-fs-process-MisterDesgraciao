@@ -173,29 +173,30 @@ Le damos un valor `true` a `comprobacion` para que después no nos salte el mens
            */
           if (argv.lineas === true) {
             const contadorLineas = spawn('wc', ['-l', filename]);
-            let outputLineas: number = 0;
+            let outputLineas = ' ;
             contadorLineas.stdout.on('data', (chunk) => {
               outputLineas += chunk;
             });
             comprobacion = true;
             contadorLineas.stdout.on('close', () => {
+              const outputLineasArray = outputLineas.split(/\s+/);
               console.log(
-                  `El total de líneas es ${outputLineas}.`);
+                  `El total de líneas es ${outputLineasArray[1]}.`);
             });
             contadorLineas.stdout.pipe(process.stdout);
           }
           /**
            * Resto de ifs...
-           *
+           */
 ```
 
 Por último, para imprimir este valor tenemos las dos variantes:
 - La variante sin `pipe` que realizar un `console.log()` cuando la variable recibe un argumento de tipo `close`, es decir, que el programa finaliza correctamente (termina el comando `wc`). 
 - Usando `contadorLineas.stdout.pipe(process.stdout)` lo que hacemos es enviar el valor de `contadorLineas` usando un `pipe` (debido a que es un objeto `ChildProcess`, es decir, hereda de `Stream`) a la salida por terminal, simbolizada por la variable `process.stdout`.
 
-Un par de apuntes que tengo que hacer sobre estas dos salidas. La primera es que no entiendo muy bien cómo funciona el output a través de `console.log()`, quiero decir, a pesar de declararlo como `number`, esta variable tiene el número recibido más el nombre del fichero. En un principio pensé que esto funcionada más como un vector, pero se parece más a un string, y si accedeo al valor de la posición 1, accedo solo al primer dígito, y no al número completo.
+Un par de apuntes que tengo que hacer sobre estas dos salidas. La primera es que he creado una variable `outputLineasArray`, que a través de la función `split()` y el valor (extraído de los apuntes de clase), puedo almacenar por separado el número, de líneas en este caso, y el nombre del fichero. Es por esto que uso `outputLineasArray[1]`.
 
-Esto podría suponer un problema: el imprimir [x] por [x] supone que para cantidades muy grandes de texto es posible que falten dígitos por imprimir. Así que al final me he decantado por imprimir el valor completo de la variable, pues aunque tiene un formato feo (el que recibe del buffer pero en string), siempre es correcto.
+Sin embargo, no sé cómo hacer esto mismo con `pipe`. Así que al final me he decantado por imprimir el valor completo de la variable, pues aunque tiene un formato feo (el que recibe del buffer pero en string), siempre muestra todos los valores.
 
 Por último, comentar que para este programa no he realizado tests porque no puedo realizar comprobaciones con `mocha` sobre un comando creado con `yargs`. Este ejercicio lo único que hace es recoger información e implimirla por pantalla, lo cual no sé si puede comprobar siquiera.
 
