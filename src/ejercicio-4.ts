@@ -193,62 +193,50 @@ yargs.command({
     if (typeof argv.origen === 'string' && typeof argv.destino === 'string') {
       const originPath: string = argv.origen;
       const destinationPath: string = argv.destino;
-      const copiaContenido: [string, string] = ['', ''];
       fs.access(originPath, (err) => {
         if (err) {
-          console.log(chalk.red('Error. El fichero/directorio no existe'));
+          console.log(chalk.red('Error. El fichero/directorio de origen no existe'));
         } else {
-          fs.readdir(originPath, 'utf-8', (err, files) => {
+          fs.access(destinationPath, (err) => {
             if (err) {
-              console.log(chalk.red.inverse(`Error al intentar leer el directorio ${originPath}`));
+              console.log(chalk.red('Error. El fichero/directorio de destino no existe'));
             } else {
-              files.forEach((elemento) => {
-                const rutaElemento = originPath + '/' + elemento;
-                fs.readFile(rutaElemento, (err, data) => {
-                  if (!err) {
-                    copiaContenido.push(elemento, data.toString());
-                    // console.log(`${elemento} + ${data.toString()}`);
-                  }
-                });
-                fs.readdir(rutaElemento, (err, files) => {
-                  if (!err) {
-                    copiaContenido.push(elemento, '0');
-                    // console.log(elemento);
-                  }
-                });
+              fs.readdir(originPath, 'utf-8', (err, files) => {
+                if (err) {
+                  console.log(chalk.red.inverse(`Error al intentar leer el directorio ${originPath}`));
+                } else {
+                  files.forEach((elemento) => {
+                    const rutaElemento = originPath + '/' + elemento;
+                    fs.readFile(rutaElemento, (err, data) => {
+                      if (err) {
+                        console.log(chalk.red.inverse('Error inesperado al leer el fichero.'));
+                      } else {
+                        const nuevoFichero = destinationPath + '/' + elemento;
+                        fs.writeFile(nuevoFichero, data, 'utf8', (err) => {
+                          if (err) {
+                            console.log(chalk.red.inverse(`Error al crear el fichero ${nuevoFichero}`));
+                          }
+                        });
+                      }
+                    });
+                    fs.readdir(rutaElemento, (err, files) => {
+                      if (err) {
+                        console.log(chalk.red.inverse(`Error inesperado al leer de la carpeta ${rutaElemento}`));
+                      } else {
+                        const nuevaCarpeta = destinationPath + '/' + elemento;
+                        fs.mkdir(nuevaCarpeta, (err) => {
+                          if (err) console.log(chalk.red.inverse('Error, no se ha podido crear la carpeta.'));
+                        });
+                      }
+                    });
+                  });
+                }
               });
             }
           });
-          console.log(chalk.green('Copiados los elementos.'));
         }
       });
-      console.log(copiaContenido);
-      fs.access(destinationPath, (err) => {
-        if (err) {
-          console.log(chalk.red('Error. El fichero/directorio no existe'));
-        } else {
-          copiaContenido.forEach((elemento) => {
-            console.log(`Elemento: ${elemento[0]}`);
-            if (elemento[1] === '0') {
-              const nuevaCarpeta = destinationPath + '/' + elemento[0];
-              fs.mkdir(nuevaCarpeta, (err) => {
-                if (err) {
-                  console.log(chalk.red.inverse(`Error al crear la carpeta ${nuevaCarpeta}`));
-                }
-              });
-            } /* else {
-              const nuevoFichero = destinationPath + '/' + elemento[0];
-              const datos: string = elemento[1];
-              fs.writeFile(nuevoFichero, datos, 'utf8', (err) => {
-                if (err) {
-                  console.log(chalk.red.inverse(`Error al crear el fichero ${nuevoFichero}`));
-                }
-              });
-            }*/
-          });
-          console.log(chalk.green('Creados todos los elementos.'));
-        }
-      });
+      console.log(chalk.green('Ficheros y directorios movidos correctamente.'));
     } else {
       console.log(chalk.red.inverse('La ruta especificada no es de formato string.'));
     }

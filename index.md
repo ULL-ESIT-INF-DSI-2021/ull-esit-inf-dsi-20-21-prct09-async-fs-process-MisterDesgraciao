@@ -551,6 +551,91 @@ yargs.command({
 });
 ```
 
-```typescript
+Por último, está el comando `move`. Este comando copia todos el contenido de la dirección (ficheros y/o directorios) y lo mueve a la dirección de destino. Estos dos parámetros son obligatorios.
 
+Para conseguir funcionar este programa sin errores, hay que hacer una serie de comprobaciones, las cuales me resulta más explicar de la siguiente manera:
+Comprobar que existe el directorio de **origen** (con `fs.access`) > comprobar que existe el directorio de **destino** > comprobar que la dirección de **origen** es un directorio (con `fs.readdir`) > de lo leído del directorio, ir elemento por elemento comprobando si es un fichero o un directorio > Si es un fichero, guardamos su contenido también. > Creamos en la dirección de **destino** el fichero o directorio.
+
+Si algún paso falla en algún momento, se comunica por pantalla.
+
+```typescript
+yargs.command({
+  command: 'move',
+  describe: 'Copiar y mover ficheros y/o directorios',
+  builder: {
+    origen: {
+      describe: 'Ruta de origen',
+      demandOption: true,
+      type: 'string',
+    },
+    destino: {
+      describe: 'Ruta de destino',
+      demandOption: true,
+      type: 'string',
+    },
+  },
+  handler(argv) {
+    if (typeof argv.origen === 'string' && typeof argv.destino === 'string') {
+      const originPath: string = argv.origen;
+      const destinationPath: string = argv.destino;
+      fs.access(originPath, (err) => {
+        if (err) {
+          console.log(chalk.red('Error. El fichero/directorio de origen no existe'));
+        } else {
+          fs.access(destinationPath, (err) => {
+            if (err) {
+              console.log(chalk.red('Error. El fichero/directorio de destino no existe'));
+            } else {
+              fs.readdir(originPath, 'utf-8', (err, files) => {
+                if (err) {
+                  console.log(chalk.red.inverse(`Error al intentar leer el directorio ${originPath}`));
+                } else {
+                  files.forEach((elemento) => {
+                    const rutaElemento = originPath + '/' + elemento;
+                    fs.readFile(rutaElemento, (err, data) => {
+                      if (err) {
+                        console.log(chalk.red.inverse('Error inesperado al leer el fichero.'));
+                      } else {
+                        const nuevoFichero = destinationPath + '/' + elemento;
+                        fs.writeFile(nuevoFichero, data, 'utf8', (err) => {
+                          if (err) {
+                            console.log(chalk.red.inverse(`Error al crear el fichero ${nuevoFichero}`));
+                          }
+                        });
+                      }
+                    });
+                    fs.readdir(rutaElemento, (err, files) => {
+                      if (err) {
+                        console.log(chalk.red.inverse(`Error inesperado al leer de la carpeta ${rutaElemento}`));
+                      } else {
+                        const nuevaCarpeta = destinationPath + '/' + elemento;
+                        fs.mkdir(nuevaCarpeta, (err) => {
+                          if (err) console.log(chalk.red.inverse('Error, no se ha podido crear la carpeta.'));
+                        });
+                      }
+                    });
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+      console.log(chalk.green('Ficheros y directorios movidos correctamente.'));
+    } else {
+      console.log(chalk.red.inverse('La ruta especificada no es de formato string.'));
+    }
+  },
+}).parse();
 ```
+---
+
+Por último, comentar un par de fallos/vulnerabilidades que tiene este último comando por falta de tiempo: únicamente está planteado para que copie el contenido de un **directorio**, y no de un fichero. Lo mismo para la ruta de salida, solo contempla el mover esos elementos a un directorio, y no el poder escribir todo en un fichero, por ejemplo.
+
+Si la carpeta tiene directorios dentro de ella, solamente copia el directorio y no su contenido con él. Se me hace complejo el poder implimentar la posibilidad de que un usuario pueda tener una carpeta dentro de otra carpeta y así a varios niveles. Como voy muy justo de tiempo, no lo implemento (aún).
+
+Una dificultad que tuve en este ejercicio es que volví a plantearlo como si este programa fuese secuencial. Concretamente, creé una variable al principio donde guardar todos los ficheros/directorios, esto ocurría en el `fs.access` del origen, pues iban uno después del otro (creo que con esto ya se puede preveer el problema). En el `fs.access` del destino recibo esa variable y accedo a los datos para crearlos. 
+
+Obviamente tiene que fallar. Por suerte no tardé mucho en darme cuenta que se debía a que todo este programa funciona de manera asíncrona, y para cuando se ejecute el código correspondiente al **origen**, también lo habrá hecho el de **destino** y cosas como la variable donde guardo los datos está vacía. Esto lo solucioné creando el fichero/directorio nada más confirmo que es un fichero o un directorio correspondiente al origen. 
+
+Por último, comentar que no he realizado `tests` para este ejercicio tampoco, pues pasa lo mismo que los anteriores: es difícil usar `mocha` sobre comandos creados por `yargs`. Sin embargo, creo que para este ejercicio sí podría realizar algunas comprobaciones (similares a los tests del ejercicio 8) de diferentes ficheros y/o directorios que existan o no, después de una ejecución de ejemplo/dirigida. Sin embargo, me he quedado sin tiempo para poder hacerlo.
